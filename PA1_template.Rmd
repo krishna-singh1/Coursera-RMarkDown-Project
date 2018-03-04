@@ -1,0 +1,131 @@
+---
+title: "RMarkDown"
+author: "Krrish"
+date: "March 4, 2018"
+output: html_document
+---
+
+
+##importing library
+```{r , echo=TRUE}
+library(plyr)
+library(ggplot2)
+library(lattice)
+```
+##reading csv
+```{r, echo=TRUE}
+health<-read.csv("activity.csv",na.strings = "NA",sep = ",",header = TRUE)
+names(health)
+summary(health)
+head(health)
+```
+##converting date variable to date class
+```{r, echo=TRUE}
+health$date<-as.Date(health$date,format= "%Y-%m-%d")
+health$interval<-factor(health$interval)
+```
+##ignore the missing case
+```{r, echo=TRUE}
+ignoreNa<- is.na(as.character(health$steps))
+data_no_NA<- health[!ignoreNa,]
+```
+
+##aggregation the number of steps taken each day
+```{r, echo=TRUE}
+steps_each_day<-aggregate(steps~date,data =data_no_NA,sum )
+head(steps_each_day)
+```
+
+## create histogram 
+```{r, echo=TRUE}
+hist(steps_each_day$steps,breaks = 20,col ="red",xlab = "number of steps",ylab="Date",
+     main="histogram of total number of steps taken each day")
+```
+##Mean and median number of steps taken each day
+```{r, echo=TRUE}
+mean(steps_each_day$steps)
+
+median(steps_each_day$steps)
+```
+##Time series plot of the average number of steps taken
+```{r, echo=TRUE}
+steps_per_interval<- aggregate(data_no_NA$steps,by=list(interval=data_no_NA$interval),FUN=mean)
+head(steps_per_interval)
+colnames(steps_per_interval)<-c("interval","average_steps")
+
+plot(as.integer(levels(steps_per_interval$interval)),steps_per_interval$average_steps,type = "l",
+     xlab = "Interval",ylab = "Average Number of Steps",main = "Average Daliy Activity pattern",col="blue")
+```
+
+####maximum number of average of steps
+```{r, echo=TRUE}
+maxNumberSteps<- max(steps_per_interval$average_steps)
+maxNumberSteps
+```
+
+####The 5-minute interval that, on average, contains the maximum number of steps
+```{r, echo=TRUE}
+max_step<-steps_per_interval[which.max(steps_per_interval$average_steps),]$interval
+max_step
+```
+##imputing missing value
+```{r, echo=TRUE}
+sum(is.na(as.character(health$steps)))
+```
+##for "date" variable
+```{r, echo=TRUE}
+sum(is.na(as.character(health$date)))
+```
+##for interval vlaue
+```{r, echo=TRUE}
+sum(is.na(as.character(health$interval)))
+```
+##histogram
+```{r, echo=TRUE}
+hist(as.numeric(steps_each_day$steps),breaks = 20,col="red", xlab = "Number of steps",main = "histogram of total number taken each day")
+```
+
+## create a factor variable to stor the day of week
+```{r, echo=TRUE}
+data_no_NA$day <- as.factor(weekdays(data_no_NA$date))
+table(data_no_NA$day)
+```
+##creating coa logical variable for weekdays and weekend
+```{r, echo=TRUE}
+data_no_NA$is_weekday<- ifelse(!(data_no_NA$day %in% c("Saturday","Sunday")),TRUE,FALSE)
+table(data_no_NA$is_weekday)
+```
+
+##calculatting average number of steps in week days
+```{r, echo=TRUE}
+weekdays_data<- data_no_NA[!data_no_NA$is_weekday,]
+steps_per_interval_weekdays<-aggregate(weekdays_data$steps, by=list(interval=weekdays_data$interval),FUN=mean)
+```
+##calculating the average number of steps for weekends
+```{r, echo=TRUE}
+weekends_data<- data_no_NA[!data_no_NA$is_weekday,]
+steps_per_interval_weekends <- aggregate(weekends_data$steps,by=list(interval=weekends_data$interval),FUN=mean)
+```
+
+
+##Adding columns names
+```{r, echo=TRUE}
+colnames(steps_per_interval_weekdays) <- c("interval", "average_steps")
+colnames(steps_per_interval_weekends) <- c("interval", "average_steps")
+```
+##Adding a column to indecate the day
+```{r, echo=TRUE}
+steps_per_interval_weekdays$day <- "Weekday"
+steps_per_interval_weekends$day <- "Weekend"
+```
+##merging the tow together
+```{r, echo=TRUE}
+week_data <-rbind(steps_per_interval_weekdays,steps_per_interval_weekends)
+week_data$day <- as.factor(week_data$day)
+```
+##making plot
+```{r, echo=TRUE}
+xyplot(average_steps ~ interval|day,type="l",data = week_data,layout=c(1,2),
+       ylab="Number of steps")
+
+```
