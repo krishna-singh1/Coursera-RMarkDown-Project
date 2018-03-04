@@ -1,8 +1,9 @@
+#importing library
 library(plyr)
 library(ggplot2)
 library(lattice)
+#reading csv files
 health<-read.csv("activity.csv",na.strings = "NA",sep = ",",header = TRUE)
-View(health)
 names(health)
 summary(health)
 head(health)
@@ -14,13 +15,11 @@ health$interval<-factor(health$interval)
 #ignore the missing case
 ignoreNa<- is.na(as.character(health$steps))
 data_no_NA<- health[!ignoreNa,]
-View(data_no_NA)
 
 #
 #aggregation the number of steps taken each day
 
 steps_each_day<-aggregate(steps~date,data =data_no_NA,sum )
-View(steps_each_day)
 head(steps_each_day)
 
 # create histogram 
